@@ -1,0 +1,78 @@
+name: Lint and Test Before Merge
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    environment: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PORT: 5000
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      USER_EMAIL: ${{ secrets.USER_EMAIL }}
+      USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+      BASE_URL: localhost:3000
+      NODE_ENV: test
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: Set NODE_ENV to test
+        run: echo "NODE_ENV=test" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: npm install
+      - name: Migration database
+        run: npm run db:migrate
+      - name: Generate database
+        run: npm run db:generate
+      - name: Seed database
+        run: npm run db:seed
+      - name: Test code
+        id: run-tests
+        run: npm run test
+  lint:
+    needs: test
+    environment: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: deps-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm install
+      - name: Lint code
+        run: npm run lint
+  merge:
+    needs: [test, lint]
+    environment: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge
+        run: echo "Aman"
+  report:
+    needs: merge
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output information
+        working-directory: ./BE
+        run: |
+          echo "Something went wrong"
+          echo "${{ toJSON(github) }}"

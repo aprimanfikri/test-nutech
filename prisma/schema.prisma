@@ -1,0 +1,48 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               Int           @id @default(autoincrement())
+  first_name       String
+  last_name        String
+  email            String        @unique
+  password         String
+  profile_image    String        @default("https://t4.ftcdn.net/jpg/02/29/75/83/360_F_229758328_7x8jwCwjtBMmC6rgFzLFhZoEpLobB6L8.jpg")
+  profile_image_id String?
+  balance          Float         @default(0)
+  transactions     Transaction[]
+}
+
+model Transaction {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  invoice_number   String
+  transaction_type String
+  description      String
+  total_amount     Float
+  created_on       DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model Banner {
+  id              Int     @id @default(autoincrement())
+  banner_name     String
+  banner_image    String
+  banner_image_id String?
+  description     String
+}
+
+model Service {
+  id               Int     @id @default(autoincrement())
+  service_code     String
+  service_name     String
+  service_icon     String
+  sservice_icon_id String?
+  service_tarif    Float
+}
